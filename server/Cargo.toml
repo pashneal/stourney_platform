@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+futures = "0.3.30"
 splendor_arena = "0.1.9"
 sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio"] }
 tokio = "1.40.0"
