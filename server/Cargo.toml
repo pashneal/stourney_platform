@@ -1,0 +1,10 @@
+[package]
+name = "storuney_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+splendor_arena = "0.1.9"
+sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio"] }
+tokio = "1.40.0"
+warp = "0.3.7"
