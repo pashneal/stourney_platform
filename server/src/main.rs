@@ -1,17 +1,20 @@
 use sqlx::sqlite::{SqlitePoolOptions, SqlitePool};
 use futures::TryStreamExt;
 use sqlx::Row;
+use splendor_arena::Arena;
+
+mod websocket;
 
 /// Note: this uses sqlx compile time checker
 /// to ensure that the queries are correct
 /// be sure to run sqlx prepare if strange errors occur
 /// also add your DATABASE_URL is set in the .env file
 
-//#[async_std::main] // Requires the `attributes` feature of `async-std`
 #[tokio::main]
-// or #[actix_web::main]
 async fn main() -> Result<(), sqlx::Error> {
 
+    env_logger::init();
+    
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
@@ -26,6 +29,8 @@ async fn main() -> Result<(), sqlx::Error> {
     while let Some(row) = rows.try_next().await? {
         print!("row: {:?}", row);
     }
+    
+    websocket::test(3031).await;
 
 
 
