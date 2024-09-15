@@ -113,7 +113,7 @@ pub async fn on_connect(ws : warp::ws::WebSocket, arenas: AsyncArenas, games: As
         let message = match message {
             Ok(message) => message,
             Err(_) => {
-                let error = "Invalid message".to_string();
+                let error = "Invalid message, error recieved".to_string();
                 let outgoing_message = GlobalServerResponse::Error(error);
                 send_message(outgoing_message, &mut outgoing_messages);
                 continue
@@ -154,6 +154,7 @@ pub async fn on_connect(ws : warp::ws::WebSocket, arenas: AsyncArenas, games: As
         arenas.lock().expect("Could not get arena lock").insert(id, state);
     }
 
+    // TODO: any cleanup logic here
     Err(format!("Client with id {} disconnected", id))
 }
 
@@ -228,7 +229,10 @@ pub async fn state_transition(state: &mut ArenaState, games: AsyncGames, queue :
     match request {
         ArenaRequest::DebugMessage(message) => {
             handle_debug_message(message);
-            return Ok(GlobalServerResponse::Info("Received".to_string()));
+            return Ok(GlobalServerResponse::Info("Received Debug Message".to_string()));
+        }
+        ArenaRequest::Heartbeat => {
+            return Ok(GlobalServerResponse::Info("Received Heartbeat".to_string()));
         }
         _ => {}
     };
