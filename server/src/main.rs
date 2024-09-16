@@ -30,9 +30,7 @@ async fn main() -> Result<(), sqlx::Error> {
         print!("row: {:?}", row);
     }
     
-    websocket::test(3031).await;
-
-
+    websocket::serve(3031).await;
 
     Ok(())
 }

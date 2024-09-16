@@ -7,7 +7,7 @@ use splendor_arena::{ClientInfo, models::*};
 use std::collections::VecDeque;
 use uuid::Uuid;
 use tokio::time::timeout;
-use log::{info, error};
+use log::{info, error, warn, trace};
 
 // TODO: may want to consider changing the data structure in the following cases:
 //  - horizontal scalability is a concern : swap this with Redis
@@ -42,7 +42,7 @@ pub fn generate_new_id(arenas: &Arenas) -> Uuid {
 }
 
 
-pub async fn test(port: u16){
+pub async fn serve(port: u16){
     let arenas = std::sync::Arc::new(std::sync::Mutex::new(Arenas::new()));
     let games = std::sync::Arc::new(std::sync::Mutex::new(Games::new()));
     let queue = std::sync::Arc::new(std::sync::Mutex::new(Queue::new()));
@@ -64,12 +64,13 @@ pub async fn test(port: u16){
 
     warp::serve(route).run(([127, 0, 0, 1], port)).await;
 }
-pub fn send_message(message: GlobalServerResponse, sink: &mut SplitSink<warp::ws::WebSocket, warp::ws::Message>) {
+pub async fn send_message(message: GlobalServerResponse, sink: &mut SplitSink<warp::ws::WebSocket, warp::ws::Message>) {
     let message = serde_json::to_string(&message).unwrap();
     let message = warp::ws::Message::text(message);
-    let _ = sink.send(message).map_err(|e| {
-        error!("Error sending message: {:?}", e);
-    });
+    let result =  sink.send(message).await;
+    if let Err(error) = result {
+        error!("Error sending message: {:?}", error);
+    }
 }
 
 pub fn get_arena_state(id: &Uuid, arenas: &AsyncArenas) -> Option<ArenaState> {
@@ -99,10 +100,11 @@ pub async fn on_connect(ws : warp::ws::WebSocket, arenas: AsyncArenas, games: As
     let duration = std::time::Duration::from_secs(5*60);
     while let Ok(message) = timeout(duration, incoming_messages.next()).await {
 
+        trace!("Client with id {} sent message", id);
         // Check if the message timed out (returns None)
         if message.is_none() {
             let outgoing_message = GlobalServerResponse::Timeout;
-            send_message(outgoing_message, &mut outgoing_messages);
+            send_message(outgoing_message, &mut outgoing_messages).await;
             info!("Client with id {} timed out", id);
             break
         }
@@ -115,7 +117,7 @@ pub async fn on_connect(ws : warp::ws::WebSocket, arenas: AsyncArenas, games: As
             Err(_) => {
                 let error = "Invalid message, error recieved".to_string();
                 let outgoing_message = GlobalServerResponse::Error(error);
-                send_message(outgoing_message, &mut outgoing_messages);
+                send_message(outgoing_message, &mut outgoing_messages).await;
                 continue
             }
         };
@@ -123,38 +125,46 @@ pub async fn on_connect(ws : warp::ws::WebSocket, arenas: AsyncArenas, games: As
         // Then attempt to parse the message
         let message = message.to_str().unwrap();
         let parsed_message = serde_json::from_str::<ArenaRequest>(&message);
+        info!("Client with id {} sent message: {:?}", id, parsed_message);
 
         let parsed_message = match parsed_message {
             Ok(parsed_message) => parsed_message,
             Err(_) => {
                 let error = "Invalid message".to_string();
                 let outgoing_message = GlobalServerResponse::Error(error);
-                send_message(outgoing_message, &mut outgoing_messages);
+                send_message(outgoing_message, &mut outgoing_messages).await;
                 continue
             }
         };
 
         // Then collect the internal state and attempt to transition the state using
         // the client's request
+        info!("attempting to transition state...");
         let mut state = get_arena_state(&id, &arenas).expect("Could not get arena state");
+        info!("state: {:?}", state);
         let response = state_transition(&mut state, games.clone(), queue.clone(), &parsed_message).await;
 
         // Finally, report the response to the client
+        info!("sending response to client...");  
         match response {
             Ok(response) => {
-                send_message(response, &mut outgoing_messages);
+                send_message(response, &mut outgoing_messages).await;
             },
             Err(error) => {
                 let response = GlobalServerResponse::Error(error);
-                send_message(response, &mut outgoing_messages);
+                send_message(response, &mut outgoing_messages).await;
             }
         }
+        info!("response sent to client");
 
         // And update the state
+        info!("updating state...");
         arenas.lock().expect("Could not get arena lock").insert(id, state);
+        info!("state updated");
     }
 
     // TODO: any cleanup logic here
+    warn!("Client with id {} disconnected", id);
     Err(format!("Client with id {} disconnected", id))
 }
 
@@ -261,7 +271,7 @@ pub async fn state_transition(state: &mut ArenaState, games: AsyncGames, queue :
     // If the client is authenticated, they can initialize the game,
     // if not already initialized
     match (request, state.initialized) {
-        (ArenaRequest::InitializeGame{ info }, true) => {
+        (ArenaRequest::InitializeGame{ info }, false) => {
             return handle_init(state, games, info)
         }
         (_, false) => {
