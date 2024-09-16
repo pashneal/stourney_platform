@@ -42,11 +42,11 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
     let games = warp::any().map(move || games.clone());
     
     let (qtx, qrx) = tokio::sync::mpsc::unbounded_channel();
-    tokio::spawn(queue_processer(db_pool, qrx));
     let queue = warp::any().map(move || qtx.clone());
+    trace!("Starting server on port {}", port);
 
 
-    let route = warp::path("ws")
+    let websocket = warp::path("ws")
         .and(warp::ws())
         .and(arenas)
         .and(games)
@@ -59,7 +59,15 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
             },
         );
 
-    warp::serve(route).run(([127, 0, 0, 1], port)).await;
+    let api = warp::path("api")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::html("This is the replay page")
+        });
+
+    let service = websocket.or(api);
+    tokio::spawn(queue_processer(db_pool, qrx));
+    warp::serve(service).run(([127, 0, 0, 1], port)).await;
 }
 
 pub async fn send_message(
