@@ -14,7 +14,4 @@
 
 	</p>
 
-	<p>
-		Check out the demo <a href="/demo">here</a> :D
-	</p>
 </div>
