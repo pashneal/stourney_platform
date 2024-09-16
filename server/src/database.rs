@@ -74,30 +74,61 @@ pub async fn init_schema(pool: &SqlitePool) {
 }
 
 /// Serializes the game update and saves it to the database,
-/// "simple" because this doesn't make the info very queryable, 
+/// "simple" because this doesn't make the info very queryable,
 /// but is good enough for storing data
 pub async fn simple_save_game_update(pool: &SqlitePool, game_update: GameUpdate, uuid: Uuid) {
     let uuid = uuid.to_string();
     let turnid = game_update.update_num as i32;
 
-    let game_exists = sqlx::query!("SELECT gameuuid FROM simplegames WHERE gameuuid = ? AND turnid = ?", uuid, turnid)
-        .fetch_all(pool)
-        .await
-        .expect("Failed to query database");
+    let game_exists = sqlx::query!(
+        "SELECT gameuuid FROM simplegames WHERE gameuuid = ? AND turnid = ?",
+        uuid,
+        turnid
+    )
+    .fetch_all(pool)
+    .await
+    .expect("Failed to query database");
 
     let game_update = serde_json::to_string(&game_update).unwrap();
-    if game_exists.len() == 0{
-        sqlx::query!("INSERT INTO simplegames (gameuuid, turnid, gameupdate) VALUES (?, ?, ?)", uuid, turnid, game_update)
-            .execute(pool)
-            .await
-            .expect("Failed to insert game update");
+    if game_exists.len() == 0 {
+        sqlx::query!(
+            "INSERT INTO simplegames (gameuuid, turnid, gameupdate) VALUES (?, ?, ?)",
+            uuid,
+            turnid,
+            game_update
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to insert game update");
     } else {
-        sqlx::query!("UPDATE simplegames SET gameupdate = ? WHERE gameuuid = ? AND turnid = ?", game_update, uuid, turnid)
-            .execute(pool)
-            .await
-            .expect("Failed to update game update");
+        sqlx::query!(
+            "UPDATE simplegames SET gameupdate = ? WHERE gameuuid = ? AND turnid = ?",
+            game_update,
+            uuid,
+            turnid
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to update game update");
     }
+}
 
-        
-
+/// Loads the game update from the database
+pub async fn load_game_update(pool: &SqlitePool, uuid: Uuid, turnid: i32) -> Option<GameUpdate> {
+    let uuid = uuid.to_string();
+    let game_update = sqlx::query!(
+        "SELECT gameupdate FROM simplegames WHERE gameuuid = ? AND turnid = ?",
+        uuid,
+        turnid
+    )
+    .fetch_one(pool)
+    .await;
+    if let Ok(game_update) = game_update {
+        let game_update: Option<String> = game_update.gameupdate;
+        game_update.map(|game_update| {
+            serde_json::from_str(&game_update).expect("could not deserialize game update")
+        })
+    } else {
+        None
+    }
 }

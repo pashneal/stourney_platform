@@ -7,6 +7,7 @@ use tokio::time::timeout;
 use uuid::Uuid;
 use warp::Filter;
 
+use crate::api;
 use crate::queue::*;
 
 type GameLedger = Vec<SmallClientInfo>;
@@ -40,11 +41,10 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
 
     let arenas = warp::any().map(move || arenas.clone());
     let games = warp::any().map(move || games.clone());
-    
+
     let (qtx, qrx) = tokio::sync::mpsc::unbounded_channel();
     let queue = warp::any().map(move || qtx.clone());
     trace!("Starting server on port {}", port);
-
 
     let websocket = warp::path("ws")
         .and(warp::ws())
@@ -59,14 +59,18 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
             },
         );
 
+    let db_pool_clone = db_pool.clone();
+    let db_pool = warp::any().map(move || db_pool.clone());
+
     let api = warp::path("api")
-        .and(warp::get())
-        .map(|| {
-            warp::reply::html("This is the replay page")
-        });
+        .and(warp::post())
+        .and(api::json_body())
+        .and(db_pool)
+        .and_then(api::load_game);
 
     let service = websocket.or(api);
-    tokio::spawn(queue_processer(db_pool, qrx));
+
+    tokio::spawn(queue_processer(db_pool_clone, qrx));
     warp::serve(service).run(([127, 0, 0, 1], port)).await;
 }
 

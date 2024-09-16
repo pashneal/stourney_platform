@@ -31,7 +31,11 @@ pub async fn queue_processer(db_pool: SqlitePool, mut receiver: UnboundedReceive
     }
 }
 
-pub fn update_queue(id: Uuid, updates: &Vec<GameUpdate>, sender: &mut UnboundedSender<QueueUpdate>) {
+pub fn update_queue(
+    id: Uuid,
+    updates: &Vec<GameUpdate>,
+    sender: &mut UnboundedSender<QueueUpdate>,
+) {
     for update in updates {
         let _ = sender.send((id, update.clone()));
     }

@@ -1,3 +1,4 @@
+mod api;
 mod database;
 mod queue;
 mod websocket;
