@@ -236,17 +236,8 @@ pub fn handle_game_over(state: &mut ArenaState, queue: AsyncQueue) -> Result<Glo
 /// Attempts to update some state based on the request
 pub async fn state_transition(state: &mut ArenaState, games: AsyncGames, queue : AsyncQueue, request: &ArenaRequest) -> Result<GlobalServerResponse, String> {
 
-    match request {
-        ArenaRequest::DebugMessage(message) => {
-            handle_debug_message(message);
-            return Ok(GlobalServerResponse::Info("Received Debug Message".to_string()));
-        }
-        ArenaRequest::Heartbeat => {
-            return Ok(GlobalServerResponse::Info("Received Heartbeat".to_string()));
-        }
-        _ => {}
-    };
 
+    // If the client is not authenticated, they can only authenticate
     match (request, state.authenticated) {
         (ArenaRequest::Authenticate { secret }, _) =>  {
             return handle_authenticate(secret, state)
@@ -256,6 +247,18 @@ pub async fn state_transition(state: &mut ArenaState, games: AsyncGames, queue :
             return Ok(GlobalServerResponse::Authenticated(Authenticated::Failure{ reason }))
         }
 
+        _ => {}
+    };
+    
+    // If the client is authenticated, they can send debug messages or heartbeats
+    match request {
+        ArenaRequest::DebugMessage(message) => {
+            handle_debug_message(message);
+            return Ok(GlobalServerResponse::Info("Received Debug Message".to_string()));
+        }
+        ArenaRequest::Heartbeat => {
+            return Ok(GlobalServerResponse::Info("Received Heartbeat".to_string()));
+        }
         _ => {}
     };
 
