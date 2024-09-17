@@ -28,18 +28,6 @@
     turnNumber.set(move);
   }
 
-  export async function gotoMove(move: number) {
-    fetch("/replay/goto", 
-      {
-        method : "POST", 
-        body : JSON.stringify({"move_index": move }),  
-        headers: {"Content-type": "application/json; charset=UTF-8"}
-      }
-    ).then((r) => r.json())
-     .then(r => {updateMoveInput(r.success.move_index)});
-  }
-
-
   let moveInput = 0;
 
   export let data;

@@ -71,7 +71,7 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
     let service = websocket.or(api);
 
     tokio::spawn(queue_processer(db_pool_clone, qrx));
-    warp::serve(service).run(([127, 0, 0, 1], port)).await;
+    warp::serve(service).run(([0, 0, 0, 0], port)).await;
 }
 
 pub async fn send_message(
