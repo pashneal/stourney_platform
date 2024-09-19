@@ -7,8 +7,11 @@ use tokio::time::timeout;
 use uuid::Uuid;
 use warp::Filter;
 
+use sqlx::sqlite::SqlitePool;
 use crate::api;
 use crate::queue::*;
+use crate::database;
+use crate::constants::HOST_NAME;
 
 type GameLedger = Vec<SmallClientInfo>;
 // May need a lock-free data structure here
@@ -39,8 +42,12 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
     let arenas = std::sync::Arc::new(std::sync::Mutex::new(Arenas::new()));
     let games = std::sync::Arc::new(std::sync::Mutex::new(Games::new()));
 
+    let db_clone = db_pool.clone();
+
+
     let arenas = warp::any().map(move || arenas.clone());
     let games = warp::any().map(move || games.clone());
+    let db_filter = warp::any().map(move || db_clone.clone());
 
     let (qtx, qrx) = tokio::sync::mpsc::unbounded_channel();
     let queue = warp::any().map(move || qtx.clone());
@@ -51,10 +58,11 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
         .and(arenas)
         .and(games)
         .and(queue)
+        .and(db_filter)
         .map(
-            |ws: warp::ws::Ws, arenas: AsyncArenas, games: AsyncGames, queue: AsyncQueue| {
+            |ws: warp::ws::Ws, arenas: AsyncArenas, games: AsyncGames, queue: AsyncQueue, db: SqlitePool| {
                 ws.on_upgrade(|websocket| async {
-                    let _ = on_connect(websocket, arenas, games, queue).await;
+                    let _ = on_connect(websocket, arenas, games, queue, db).await;
                 })
             },
         );
@@ -99,6 +107,7 @@ pub async fn on_connect(
     arenas: AsyncArenas,
     games: AsyncGames,
     queue: AsyncQueue,
+    db: SqlitePool,
 ) -> Result<(), String> {
     // Outgoing messages from this server and incoming messages from the client
     let (mut outgoing_messages, mut incoming_messages) = ws.split();
@@ -161,7 +170,7 @@ pub async fn on_connect(
         let mut state = get_arena_state(&id, &arenas).expect("Could not get arena state");
         info!("state: {:?}", state);
         let response =
-            state_transition(&mut state, games.clone(), queue.clone(), &parsed_message).await;
+            state_transition(&mut state, games.clone(), queue.clone(), &parsed_message, &db).await;
 
         // Finally, report the response to the client
         info!("sending response to client...");
@@ -214,22 +223,33 @@ pub fn handle_authenticate(
     }
 }
 
-// TODO: ensure proper locking write to prevent race conditions
-pub fn handle_init(
+// TODO remove db from this function and let queue handle slugging
+pub async fn handle_init(
     state: &mut ArenaState,
-    games: AsyncGames,
+    queue: AsyncQueue,
     info: &SmallClientInfo,
+    db: &SqlitePool,
 ) -> Result<GlobalServerResponse, String> {
-    state.initialized = true;
-    {
-        let mut games = games.lock().expect("Could not get game lock");
-        games.insert(state.id.clone(), Vec::new());
-        let mut game_ledger = Vec::new();
-        game_ledger.push(info);
-    }
+    let mut game_ledger = Vec::new();
+
+    let update = GameUpdate {
+        update_num: 0,
+        info: info.clone(),
+    }; 
+    game_ledger.push(update);
     let id = state.id.clone();
+
+    // TODO: perhaps we'll need a flush_queue function that 
+    // waits for the slug to be applied, something about allowing
+    // this function to know the db state gives me the heebie jeebies
+    update_queue(id, &game_ledger, &mut queue.clone());
+    let slug = database::load_slug_default(db, id).await;
+
+    state.initialized = true;
+
     return Ok(GlobalServerResponse::Initialized(Initialized::Success {
         id: id.to_string(),
+        url: format!("{}/demo/{}", HOST_NAME, slug),
     }));
 }
 
@@ -295,6 +315,7 @@ pub async fn state_transition(
     games: AsyncGames,
     queue: AsyncQueue,
     request: &ArenaRequest,
+    db: &SqlitePool,
 ) -> Result<GlobalServerResponse, String> {
     // If the client is not authenticated, they can only authenticate
     match (request, state.authenticated) {
@@ -332,7 +353,7 @@ pub async fn state_transition(
     // If the client is authenticated, they can initialize the game,
     // if not already initialized
     match (request, state.initialized) {
-        (ArenaRequest::InitializeGame { info }, false) => return handle_init(state, games, info),
+        (ArenaRequest::InitializeGame { info }, false) => return handle_init(state, queue, info, db).await,
         (_, false) => {
             let reason = "Game must be initialized first".to_string();
             return Ok(GlobalServerResponse::Initialized(Initialized::Failure {
