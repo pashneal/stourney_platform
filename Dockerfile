@@ -26,7 +26,7 @@ RUN npm install
 RUN npm run build
 
 RUN echo "npm run preview -- --host 0.0.0.0 &" >> start.sh
-RUN echo "RUST_LOG=trace /stourney_platform/server/target/release/stourney_server" >> start.sh
+RUN echo "RUST_LOG=info /stourney_platform/server/target/release/stourney_server" >> start.sh
 RUN cat ./start.sh
 RUN chmod +x ./start.sh
  
