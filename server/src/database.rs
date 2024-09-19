@@ -3,6 +3,7 @@ use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use uuid::Uuid;
 use rand::Rng;
 use crate::slug_list::{ADJECTIVES, NOUNS};
+use log::info;
 
 /// Connects to the database and returns a pool
 /// Requires the DATABASE_URL environment variable is set
@@ -79,6 +80,7 @@ pub async fn init_schema(pool: &SqlitePool) {
 /// "simple" because this doesn't make the info very queryable,
 /// but is good enough for storing data
 pub async fn simple_save_game_update(pool: &SqlitePool, game_update: GameUpdate, uuid: Uuid) {
+    println!("[+] Saving game update");
     let uuid = uuid.to_string();
     let turnid = game_update.update_num as i32;
 
@@ -93,6 +95,11 @@ pub async fn simple_save_game_update(pool: &SqlitePool, game_update: GameUpdate,
 
     let game_update = serde_json::to_string(&game_update).unwrap();
     if game_exists.len() == 0 {
+        println!("[+] Inserting new game update {}", uuid);
+        sqlx::query!(
+            "INSERT or REPLACE into games (game_uuid) VALUES (?)",
+            uuid
+        ).execute(pool).await.expect("Failed to insert new game");
         sqlx::query!(
             "INSERT INTO game_updates (update_uuid, turn_id, game_update) VALUES (?, ?, ?)",
             uuid,
@@ -164,6 +171,23 @@ pub async fn save_slug(pool: &SqlitePool, uuid: Uuid, slug: &str) {
         uuid,
         slug
     ).execute(pool).await.expect("Failed to insert slug");
+}
+
+/// Loads a uuid given a slug form the database
+pub async fn load_uuid_from_slug(pool: &SqlitePool, slug: &str) -> Result<Uuid, sqlx::Error> { 
+    let slug = slug.to_string();
+    let uuid = sqlx::query!(
+        "SELECT slug_id FROM slugs WHERE slug = ?",
+        slug
+    ).fetch_one(pool).await;
+
+    if let Ok(uuid) = uuid {
+        let uuid = uuid.slug_id;
+        let uuid = uuid.unwrap();
+        Ok(Uuid::parse_str(&uuid).expect("Failed to parse uuid"))
+    } else {
+        Err(sqlx::Error::RowNotFound)
+    }
 }
 
 /// Loads a slug from the database if it is present,

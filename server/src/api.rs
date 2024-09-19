@@ -180,10 +180,10 @@ pub async fn load_game(
     update: UpdateRequest,
     db_pool: SqlitePool,
 ) -> Result<impl Reply, Rejection> {
-    let uuid = update.uuid;
+    let slug = update.uuid;
     let turn_id = update.turn_number;
 
-    let uuid = Uuid::from_str(&uuid).map_err(|_| warp::reject::not_found())?;
+    let uuid = database::load_uuid_from_slug(&db_pool, &slug).await.map_err(|_| warp::reject::not_found())?;
     let game = database::load_game_update(&db_pool, uuid, turn_id as i32).await;
     let game = game.map(|game| DetailedGameUpdate::from_game_update(&game));
 
