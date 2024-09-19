@@ -173,11 +173,12 @@ pub async fn load_slug(pool: &SqlitePool, uuid: Uuid) -> Option<String> {
         "SELECT slug FROM slugs WHERE slug_id = ?",
         uuid
     ).fetch_one(pool).await;
+    if slug.is_err() { return None; }
+    let slug = slug.unwrap();
+    let s = slug.slug;
+    return s;
 
-    match slug {
-        Ok(slug) => slug.slug,
-        Err(_) => None
-    }
+
 }
 
 /// Loads a slug from the database if it is present,

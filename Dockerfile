@@ -1,13 +1,14 @@
-FROM debian:bookworm-slim
-RUN apt-get update 
-RUN apt-get install -y build-essential
-RUN apt-get install -y curl
-RUN apt-get install -y git
-RUN apt-get install -y libssl-dev
+FROM nealpowell/stourney-base:latest 
+#RUN apt-get update 
+#RUN apt-get install -y build-essential
+#RUN apt-get install -y curl
+#RUN apt-get install -y git
+#RUN apt-get install -y libssl-dev
+#RUN apt-get install -y pkg-config
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN apt-get install npm -y
+#RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#ENV PATH="/root/.cargo/bin:${PATH}"
+#RUN apt-get install npm -y
 
 RUN git clone https://github.com/pashneal/stourney_platform 
 RUN cat stourney_platform/server/Cargo.toml | grep arena
@@ -35,5 +36,5 @@ RUN chmod +x ./start.sh
 CMD ["bash", "./start.sh"]
 # Web server
 EXPOSE 4173 
-# Daatabase api
+# Database api
 EXPOSE 3031
