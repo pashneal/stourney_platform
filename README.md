@@ -15,4 +15,7 @@ docker run -dp 4173:4173 --mount type=volume,src=stourney_db,target=/persistent 
 
 # shows where the docker volume is
 docker volume inspect stourney_db
+
+# create a blank sqlite database in the volume  (you'll crash without this)
+sqlite3 <path to volume>/stourney.db < server/src/schema.sql
 ```
