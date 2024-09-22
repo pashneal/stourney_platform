@@ -14,6 +14,7 @@ The protocol for how this works is documented below:
 - [ ] Send game updates when game is actually updated
 - [ ] Gameover declaration and ack
 - [ ] Sever connection after game end and ack
+- [ ] Sever connection on errors
 
 
 ## Protocol 
