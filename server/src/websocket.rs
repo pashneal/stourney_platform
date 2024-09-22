@@ -94,6 +94,7 @@ pub fn get_arena_state(id: &Uuid, arenas: &AsyncArenas) -> Option<ArenaState> {
         None => None,
     }
 }
+/// TODO: disconnect client if any errors occur
 pub async fn on_connect(
     ws: warp::ws::WebSocket,
     arenas: AsyncArenas,
