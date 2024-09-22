@@ -2,6 +2,7 @@ use splendor_arena::models::*;
 use sqlx::sqlite::SqlitePool;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
+use log::debug;
 
 use crate::database;
 
@@ -20,7 +21,7 @@ pub async fn queue_processer(db_pool: SqlitePool, mut receiver: UnboundedReceive
         match receiver.recv().await {
             Some(game_update) => {
                 let (uuid, update) = game_update;
-                println!("[+] Processing client update for {}", uuid);
+                debug!("[+] Processing client update for {}", uuid);
                 database::simple_save_game_update(&db_pool, update, uuid).await;
             }
             None => {

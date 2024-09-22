@@ -1,6 +1,6 @@
 // allows Websocket::split()
 use futures_util::{stream::SplitSink, SinkExt, StreamExt};
-use log::{error, info, trace, warn};
+use log::{error, info, trace, warn, debug};
 use splendor_arena::{models::*, SmallClientInfo};
 use std::collections::HashMap;
 use tokio::time::timeout;
@@ -17,7 +17,7 @@ type GameLedger = Vec<SmallClientInfo>;
 // May need a lock-free data structure here
 type Games = HashMap<Uuid, GameLedger>;
 // Ditto
-type Arenas = HashMap<Uuid, ArenaState>;
+pub type Arenas = HashMap<Uuid, ArenaState>;
 
 pub type AsyncGames = std::sync::Arc<std::sync::Mutex<Games>>;
 pub type AsyncArenas = std::sync::Arc<std::sync::Mutex<Arenas>>;
@@ -28,14 +28,6 @@ pub struct ArenaState {
     pub initialized: bool,             // Did the client initialize the game?
     pub id: Uuid,                      // The client's id set on websocket connect
     pub num_successful_updates: usize, // Number of successful updates since init
-}
-
-pub fn generate_new_id(arenas: &Arenas) -> Uuid {
-    let mut id = Uuid::new_v4();
-    while arenas.contains_key(&id) {
-        id = Uuid::new_v4();
-    }
-    return id;
 }
 
 pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
@@ -51,7 +43,7 @@ pub async fn serve(port: u16, db_pool: sqlx::SqlitePool) {
 
     let (qtx, qrx) = tokio::sync::mpsc::unbounded_channel();
     let queue = warp::any().map(move || qtx.clone());
-    trace!("Starting server on port {}", port);
+    debug!("Starting server on port {}", port);
 
     let websocket = warp::path("ws")
         .and(warp::ws())
@@ -112,7 +104,10 @@ pub async fn on_connect(
     // Outgoing messages from this server and incoming messages from the client
     let (mut outgoing_messages, mut incoming_messages) = ws.split();
 
-    let id = generate_new_id(&arenas.lock().expect("Could not get arena lock"));
+    let id = database::generate_new_id(&db).await;
+    let slug = database::load_slug_default(&db, id).await;
+    info!("Client with id {} connected, slug : {}", id, slug);
+
     let state = ArenaState {
         authenticated: false,
         initialized: false,
@@ -120,7 +115,6 @@ pub async fn on_connect(
         num_successful_updates: 0,
     };
 
-    info!("Client with id {} connected", id);
     arenas
         .lock()
         .expect("Could not get arena lock")
@@ -128,12 +122,12 @@ pub async fn on_connect(
 
     let duration = std::time::Duration::from_secs(5 * 60);
     while let Ok(message) = timeout(duration, incoming_messages.next()).await {
-        trace!("Client with id {} sent message", id);
+        trace!("Client with slug {} sent message", slug);
         // Check if the message timed out (returns None)
         if message.is_none() {
             let outgoing_message = GlobalServerResponse::Timeout;
             send_message(outgoing_message, &mut outgoing_messages).await;
-            info!("Client with id {} timed out", id);
+            info!("Client with slug {} timed out", slug);
             break;
         }
         let message = message.unwrap();
@@ -152,7 +146,8 @@ pub async fn on_connect(
         // Then attempt to parse the message
         let message = message.to_str().unwrap();
         let parsed_message = serde_json::from_str::<ArenaRequest>(&message);
-        info!("Client with id {} sent message: {:?}", id, parsed_message);
+        info!("Client with slug {} sent message", slug);
+        trace!("Client with slug {} sent message: {:?}", slug, parsed_message);
 
         let parsed_message = match parsed_message {
             Ok(parsed_message) => parsed_message,
@@ -166,14 +161,12 @@ pub async fn on_connect(
 
         // Then collect the internal state and attempt to transition the state using
         // the client's request
-        info!("attempting to transition state...");
         let mut state = get_arena_state(&id, &arenas).expect("Could not get arena state");
-        info!("state: {:?}", state);
+        debug!("{} state: {:?}", slug, state);
         let response =
             state_transition(&mut state, games.clone(), queue.clone(), &parsed_message, &db).await;
 
         // Finally, report the response to the client
-        info!("sending response to client...");
         match response {
             Ok(response) => {
                 send_message(response, &mut outgoing_messages).await;
@@ -183,20 +176,20 @@ pub async fn on_connect(
                 send_message(response, &mut outgoing_messages).await;
             }
         }
-        info!("response sent to client");
+        debug!("response sent to client {}", slug);
 
         // And update the state
-        info!("updating state...");
+        debug!("updating state... {}", slug);
         arenas
             .lock()
             .expect("Could not get arena lock")
             .insert(id, state);
-        info!("state updated");
+        debug!("state updated {}", slug);
     }
 
     // TODO: any cleanup logic here
-    warn!("Client with id {} disconnected", id);
-    Err(format!("Client with id {} disconnected", id))
+    warn!("Client with slug {} disconnected", slug);
+    Err(format!("Client with slug {} disconnected", slug))
 }
 
 pub fn verify(_secret: &str) -> bool {
