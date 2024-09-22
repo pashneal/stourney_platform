@@ -19,6 +19,8 @@ RUN mkdir /persistent
 WORKDIR /stourney_platform/server
 ENV DATABASE_URL="sqlite:///persistent/stourney.db"
 RUN sqlite3 /persistent/stourney.db < src/schema.sql
+RUN cargo install sqlx-cli
+RUN cargo sqlx prepare
 RUN cargo build --release 
 
 RUN cd /stourney_platform/web 

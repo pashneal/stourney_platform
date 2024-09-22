@@ -4,6 +4,7 @@ use uuid::Uuid;
 use rand::Rng;
 use crate::slug_list::{ADJECTIVES, NOUNS};
 use log::{debug, info, trace};
+use sqlx::Row;
 
 /// Connects to the database and returns a pool
 /// Requires the DATABASE_URL environment variable is set
@@ -202,14 +203,14 @@ pub async fn load_uuid_from_slug(pool: &SqlitePool, slug: &str) -> Result<Uuid, 
 /// Loads a slug from the database if it is present,
 pub async fn load_slug(pool: &SqlitePool, uuid: Uuid) -> Option<String> {
     let uuid = uuid.to_string();
-    let slug = sqlx::query!(
+    let slug = sqlx::query(
         "SELECT slug FROM slugs WHERE slug_id = ?",
-        uuid
-    ).fetch_one(pool).await;
+    ).bind(uuid).fetch_one(pool).await;
+
     if slug.is_err() { return None; }
     let slug = slug.unwrap();
-    let s = slug.slug;
-    return s;
+    let slug = slug.get_unchecked(0);
+    Some(slug)
 }
 
 /// Loads a slug from the database if it is present,
