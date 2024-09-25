@@ -1,6 +1,8 @@
 # TODO: send shutdown signal to give the server time to save state
 pkill -f stourney_server
 pkill -f npm
+pkill -f node
+pkill -f vite
 
 # Start the web client
 cd /stourney_platform/web
