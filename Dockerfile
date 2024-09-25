@@ -22,7 +22,6 @@ RUN npm run build
 
 RUN chmod +x /stourney_platform/scripts/restart.sh
 RUN chmod +x /stourney_platform/scripts/rebuild.sh
- 
 # Note that this is not a production ready setup.
 # but it is good enough for a simple demo
 CMD ["bash", "/stourney_platform/scripts/rebuild.sh"]
