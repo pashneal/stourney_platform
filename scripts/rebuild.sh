@@ -4,7 +4,7 @@ cd /stourney_platform/scripts
 while true; 
 do 
   # Check for updates to the stourney platform and rebuild if necessary
-  if [[ $(git fetch --dry-run) ]]; then
+  if [[ $(git fetch --dry-run 2>&1) ]]; then
       echo "Changes detected, rebuilding..."
       git pull
       cd /stourney_platform
