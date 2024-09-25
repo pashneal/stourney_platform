@@ -27,5 +27,5 @@ do
   else
       echo "No changes detected, skipping rebuild..."
   fi
-  sleep 5
+  sleep 5;
 done

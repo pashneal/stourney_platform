@@ -1,5 +1,7 @@
 FROM nealpowell/stourney-cache:latest 
 
+RUN apt-get install -y procps
+
 RUN git pull
 
 RUN cd /stourney_platform/server
@@ -23,7 +25,7 @@ RUN chmod +x /stourney_platform/scripts/rebuild.sh
  
 # Note that this is not a production ready setup.
 # but it is good enough for a simple demo
-CMD ["bash", "/stourney_platform/scripts/start.sh"]
+CMD ["bash", "/stourney_platform/scripts/rebuild.sh"]
 # Web server
 EXPOSE 4173 
 # Database api
