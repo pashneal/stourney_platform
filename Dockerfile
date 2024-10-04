@@ -2,6 +2,7 @@ FROM nealpowell/stourney-cache:latest
 
 RUN apt-get install -y procps
 
+RUN git stash
 RUN git pull
 
 RUN cd /stourney_platform/server
