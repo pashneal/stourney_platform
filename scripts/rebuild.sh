@@ -6,6 +6,7 @@ do
   # Check for updates to the stourney platform and rebuild if necessary
   if [[ $(git fetch --dry-run 2>&1) ]]; then
       echo "Changes detected, rebuilding..."
+      git stash
       git pull
       cd /stourney_platform
 
