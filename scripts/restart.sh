@@ -6,7 +6,7 @@ pkill -f vite
 
 # Start the web client
 cd /stourney_platform/web
-npm run preview -- --host 0.0.0.0 & 
+npm run preview -- --host 0.0.0.0 2> /persistent/logs & 
 
 # Send all logs to file for debugging
 cd /stourney_platform/server
