@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use splendor_arena::models::GameUpdate;
 use splendor_arena::*;
 use sqlx::sqlite::SqlitePool;
-use std::str::FromStr;
-use uuid::Uuid;
 use warp::{Filter, Rejection, Reply};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -145,7 +143,7 @@ pub struct DetailedGameUpdate {
     pub board: BoardDescription,
     pub players: Vec<PlayerDescription>,
     #[serde(rename = "currentPlayer")]
-    pub current_player : usize,
+    pub current_player: usize,
 }
 
 impl DetailedGameUpdate {
@@ -183,7 +181,9 @@ pub async fn load_game(
     let slug = update.uuid;
     let turn_id = update.turn_number;
 
-    let uuid = database::load_uuid_from_slug(&db_pool, &slug).await.map_err(|_| warp::reject::not_found())?;
+    let uuid = database::load_uuid_from_slug(&db_pool, &slug)
+        .await
+        .map_err(|_| warp::reject::not_found())?;
     let game = database::load_game_update(&db_pool, uuid, turn_id as i32).await;
     let game = game.map(|game| DetailedGameUpdate::from_game_update(&game));
 

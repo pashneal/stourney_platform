@@ -1,10 +1,10 @@
-use splendor_arena::models::GameUpdate;
-use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
-use uuid::Uuid;
-use rand::Rng;
 use crate::slug_list::{ADJECTIVES, NOUNS};
 use log::{debug, info, trace};
+use rand::Rng;
+use splendor_arena::models::GameUpdate;
+use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use sqlx::Row;
+use uuid::Uuid;
 
 /// Connects to the database and returns a pool
 /// Requires the DATABASE_URL environment variable is set
@@ -82,10 +82,10 @@ pub async fn generate_new_id(pool: &SqlitePool) -> Uuid {
     let uuid = Uuid::new_v4();
     let uuid_str = uuid.to_string();
 
-    sqlx::query!(
-        "INSERT INTO games (game_uuid) VALUES (?)",
-        uuid_str
-    ).execute(pool).await.expect("Failed to insert game");
+    sqlx::query!("INSERT INTO games (game_uuid) VALUES (?)", uuid_str)
+        .execute(pool)
+        .await
+        .expect("Failed to insert game");
 
     uuid
 }
@@ -154,22 +154,25 @@ pub async fn load_game_update(pool: &SqlitePool, uuid: Uuid, turnid: i32) -> Opt
 /// Generates a unique slug for a url
 /// TODO: this is slow in the case of lots of collisions
 pub async fn generate_unique_slug(pool: &SqlitePool) -> String {
-    loop {  
+    loop {
         let first: usize;
         let second: usize;
+        let third: i32;
         {
             let mut rng = rand::thread_rng();
             first = rng.gen_range(0..ADJECTIVES.len());
             second = rng.gen_range(0..NOUNS.len());
+            third = rng.gen_range(0..1000);
         }
-        let slug = format!("{}_{}", ADJECTIVES[first], NOUNS[second]);
+        let slug = format!("{}_{}{:04}", ADJECTIVES[first], NOUNS[second], third);
         let slug = slug.to_string();
 
-        let slug_exists = sqlx::query!(
-            "SELECT slug FROM slugs WHERE slug = ?",
-            slug
-        ).fetch_one(pool).await;
-        if slug_exists.is_err() { return slug; }
+        let slug_exists = sqlx::query!("SELECT slug FROM slugs WHERE slug = ?", slug)
+            .fetch_one(pool)
+            .await;
+        if slug_exists.is_err() {
+            return slug;
+        }
     }
 }
 
@@ -180,16 +183,18 @@ pub async fn save_slug(pool: &SqlitePool, uuid: Uuid, slug: &str) {
         "INSERT INTO slugs (slug_id, slug) VALUES (?, ?)",
         uuid,
         slug
-    ).execute(pool).await.expect("Failed to insert slug");
+    )
+    .execute(pool)
+    .await
+    .expect("Failed to insert slug");
 }
 
 /// Loads a uuid given a slug form the database
-pub async fn load_uuid_from_slug(pool: &SqlitePool, slug: &str) -> Result<Uuid, sqlx::Error> { 
+pub async fn load_uuid_from_slug(pool: &SqlitePool, slug: &str) -> Result<Uuid, sqlx::Error> {
     let slug = slug.to_string();
-    let uuid = sqlx::query!(
-        "SELECT slug_id FROM slugs WHERE slug = ?",
-        slug
-    ).fetch_one(pool).await;
+    let uuid = sqlx::query!("SELECT slug_id FROM slugs WHERE slug = ?", slug)
+        .fetch_one(pool)
+        .await;
 
     if let Ok(uuid) = uuid {
         let uuid = uuid.slug_id;
@@ -203,11 +208,14 @@ pub async fn load_uuid_from_slug(pool: &SqlitePool, slug: &str) -> Result<Uuid, 
 /// Loads a slug from the database if it is present,
 pub async fn load_slug(pool: &SqlitePool, uuid: Uuid) -> Option<String> {
     let uuid = uuid.to_string();
-    let slug = sqlx::query(
-        "SELECT slug FROM slugs WHERE slug_id = ?",
-    ).bind(uuid).fetch_one(pool).await;
+    let slug = sqlx::query("SELECT slug FROM slugs WHERE slug_id = ?")
+        .bind(uuid)
+        .fetch_one(pool)
+        .await;
 
-    if slug.is_err() { return None; }
+    if slug.is_err() {
+        return None;
+    }
     let slug = slug.unwrap();
     let slug = slug.get_unchecked(0);
     Some(slug)
@@ -216,11 +224,11 @@ pub async fn load_slug(pool: &SqlitePool, uuid: Uuid) -> Option<String> {
 /// Loads a slug from the database if it is present,
 /// otherwise returns a human readable string to be used as a slug
 /// and saves it to the database
-pub async fn load_slug_default(pool : &SqlitePool , uuid: Uuid) -> String {
+pub async fn load_slug_default(pool: &SqlitePool, uuid: Uuid) -> String {
     let slug = load_slug(pool, uuid).await;
-    match  slug {
+    match slug {
         Some(slug) => slug,
-        None => {// TODO: not hardcoded
+        None => {
             let slug = generate_unique_slug(pool).await;
             save_slug(pool, uuid, &slug).await;
             slug
