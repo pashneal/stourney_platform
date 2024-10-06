@@ -52,6 +52,8 @@
   --color-emerald-pip: var(--color-emerald-gem);
   --color-sapphire-pip: var(--color-sapphire-gem);
 
+  --color-selected-pip: #f7717d;
+
 	font-family: var(--font-body);
 	color: var(--color-text);
 }

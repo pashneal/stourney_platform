@@ -19,7 +19,6 @@
 use log::debug;
 use splendor_arena::models::*;
 use sqlx::sqlite::SqlitePool;
-use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
 

@@ -8,6 +8,7 @@
 
   export let gem_name : "emerald" | "sapphire" | "ruby" | "diamond"  | "onyx";
   export let number : number;
+  export let selected : boolean = false;
 
   let gems = {
     "emerald": emerald,
@@ -16,6 +17,7 @@
     "ruby": ruby,
     "onyx": onyx
   }
+
 </script>
 
 <div class="card-detail-container">
@@ -41,7 +43,7 @@
     border-radius: 20px;
   }
 
-  img{
+  img {
     width: 30%;
     height: 120%;
     position: absolute;
@@ -91,7 +93,4 @@
   .sapphire.pip{
     background-color: var(--color-sapphire-pip);
   }
-
-  
-
 </style>

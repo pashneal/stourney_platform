@@ -9,6 +9,8 @@
 
   export let tokenName : "emerald" | "sapphire" | "ruby" | "diamond"  | "onyx" | "gold";
   export let numRemaining : number;
+  export let selected : boolean = false;
+  export let disabled : boolean = false;
 
   let tokens = {
     "emerald": emerald,
@@ -21,11 +23,15 @@
 
 </script>
 
-<div class="token-container">
+<div class="token-container {disabled? "disabled": ""}">
 
   {#each Array(numRemaining) as _,i}
     {#if i == numRemaining - 1}
-      <div class="top token-float-{i}">
+      <div class="top token-float-{i} {selected ? "selected" : ""}">
+        <img src={tokens[tokenName]} alt="Token" draggable="false"/>
+      </div>
+    {:else if i == numRemaining - 2}
+      <div class="below-top token-float-{i} {selected ? "selected" : ""}">
         <img src={tokens[tokenName]} alt="Token" draggable="false"/>
       </div>
     {:else}
@@ -71,13 +77,25 @@
     margin: auto;
   }
 
-  .top:hover {
-    transform: translate(-5px, -5px);
-    z-index: 1;
-    filter: drop-shadow(2px 2px 10px rgba(255,255, 255, 0.5));
-    transition: transform 0.1s;
+  .token-container:not(.disabled):hover {
+    background-color:  rgba(255, 255, 255, 0.5);
   }
 
+  .token-container:not(.disabled):hover .top:not(.selected) {
+    transform: translate(-5px, -5px);
+    z-index: 1;
+    filter: drop-shadow(0px 0px 5px var(--color-glow));
+  }
+  .token-container:hover .top.selected{
+    transform: translate(-50px, -5px);
+    z-index: 1;
+    filter: drop-shadow(0px 0px 5px var(--color-glow));
+  }
+
+  .top.selected {
+    transform: translate(-50px);
+    z-index: 1;
+  }
 
   .token-float-0 {
     position: absolute;
@@ -112,10 +130,13 @@
     top: -12px;
     left: -12px;
   }
-  /* animate the top token to transform up and left a bit*/
+
   .top {
     transition: transform 0.2s;
   }
+
+  /*.selected {
+  }*/
 
 </style>
 
