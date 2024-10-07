@@ -1,5 +1,5 @@
 # stourney_platform
-Web platform for https://www.stourney.com
+Web platform for https://www.stourney.com/demo
 
 ## Docker config
 
