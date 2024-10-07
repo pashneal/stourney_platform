@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This back server is run in the docker environment and collects game information from 
+This back-end server is run in the docker environment and collects game information from 
 locally played games to be displayed on stourney.com. It collects client information
-as the game runs so that the data is able be relayed live as the game progresses
+as the game runs so that the data is able be replayed live as the game progresses.
 
 The protocol for how this works is documented below:
 
