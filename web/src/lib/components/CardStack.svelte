@@ -1,34 +1,37 @@
 <script lang="ts">
   import stack from "$lib/assets/card_count.svg";
+  import ConfirmDialogAccept from "./ConfirmDialogAccept.svelte";
   export let count : number;
   let max = 7;
   let num = count > max ? max : count;
 </script>
 
-<div class="stack-container">
-  {#if count > 0}
+<ConfirmDialogAccept>
+  <div class="stack-container">
+    {#if count > 0}
 
-    <div class="shadow card-stack">
-      <div class="count">
-        {count}
-      </div>
-      <img src={stack} alt="Card Stack" draggable="false"/>
-    </div>
-    {#each Array(num) as _, i}
-      <div class="shadow card-stack-{i}">
-          <div class="count">
-            {count}
-          </div>
+      <div class="shadow card-stack">
+        <div class="count">
+          {count}
+        </div>
         <img src={stack} alt="Card Stack" draggable="false"/>
       </div>
-    {/each}
+      {#each Array(num) as _, i}
+        <div class="shadow card-stack-{i}">
+            <div class="count">
+              {count}
+            </div>
+          <img src={stack} alt="Card Stack" draggable="false"/>
+        </div>
+      {/each}
 
-  {:else}
-    <div class="empty card-stack">
-      <img class="hidden" src={stack} alt="Card Stack" draggable="false"/>
-    </div>
-  {/if}
-</div>
+    {:else}
+      <div class="empty card-stack">
+        <img class="hidden" src={stack} alt="Card Stack" draggable="false"/>
+      </div>
+    {/if}
+  </div>
+</ConfirmDialogAccept>
 
 <style>
   .stack-container {

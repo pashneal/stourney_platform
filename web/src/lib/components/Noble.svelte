@@ -1,18 +1,21 @@
 <script lang="ts">
   import queen from "$lib/assets/queen2.svg";
+  import ConfirmDialogAccept from "./ConfirmDialogAccept.svelte";
 </script>
 
-<div class="noble-container">
-  <img src={queen} alt="Queen" draggable="false"/>
-  <div class="details"> 
-    <slot></slot>
+<ConfirmDialogAccept>
+  <div class="noble-container">
+    <img src={queen} alt="Queen" draggable="false"/>
+    <div class="details"> 
+      <slot></slot>
+    </div>
   </div>
-</div>
+</ConfirmDialogAccept>
 
 <style>
   .noble-container {
     width: 100%;
-    height: 20%;
+    height: 60%;
     position : relative;
     border-radius: 20px;
     flex-direction: row;
