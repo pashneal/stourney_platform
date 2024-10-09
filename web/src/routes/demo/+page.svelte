@@ -58,8 +58,7 @@
   function toggleBankSelection(gem: Gem) {
     console.log("toggling", gem);
     bankSelected.update((selected) => {
-      console.log("toggling");
-      selected.set(gem, !selected.get(gem));
+      selected.set(gem, ( selected.get(gem)! + 1 ) % 3);
       return selected;
     });
   }
@@ -83,14 +82,12 @@
     <Bank>
       {#each $bank as bankDesc}
         <button class="gem-token" on:click={() => toggleBankSelection(bankDesc.gemName)}>
-          <GemToken tokenName={bankDesc.gemName} numRemaining={bankDesc.gemCount} selected={$bankSelected.get(bankDesc.gemName)} />
+          <GemToken tokenName={bankDesc.gemName} numRemaining={bankDesc.gemCount} numSelected={$bankSelected.get(bankDesc.gemName)} />
         </button>
       {/each}
     </Bank>
     <VDivider/>
-    <div>
-      <CardDislay/>
-    </div>
+    <CardDislay/>
     <VDivider/>
     <div class="nobles">
       {#each $nobles as noble}

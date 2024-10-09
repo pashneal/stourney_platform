@@ -1,5 +1,11 @@
+<script>
+  import ConfirmDialogAccept from "$lib/components/ConfirmDialogAccept.svelte";
+</script>
+
 <div class="gems">
-  <slot></slot>
+  <ConfirmDialogAccept>
+    <slot></slot>
+  </ConfirmDialogAccept>
 </div>
 
 
@@ -9,6 +15,8 @@
     justify-content: center;
     flex-direction: column;
     flex-wrap: wrap;
+    width: 10%;
     gap: 5px;
   }
+
 </style>

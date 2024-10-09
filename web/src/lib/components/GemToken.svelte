@@ -1,4 +1,5 @@
 <script lang="ts">
+
   import emerald from "$lib/assets/token_emerald.svg";
   import sapphire from "$lib/assets/token_sapphire.svg";
   import diamond from "$lib/assets/token_diamond.svg";
@@ -9,7 +10,7 @@
 
   export let tokenName : "emerald" | "sapphire" | "ruby" | "diamond"  | "onyx" | "gold";
   export let numRemaining : number;
-  export let selected : boolean = false;
+  export let numSelected : number = 0;
   export let disabled : boolean = false;
 
   let tokens = {
@@ -27,11 +28,11 @@
 
   {#each Array(numRemaining) as _,i}
     {#if i == numRemaining - 1}
-      <div class="top token-float-{i} {selected ? "selected" : ""}">
+      <div class="top token-float-{i} {numSelected > 0 ? "selected" : ""}">
         <img src={tokens[tokenName]} alt="Token" draggable="false"/>
       </div>
     {:else if i == numRemaining - 2}
-      <div class="below-top token-float-{i} {selected ? "selected" : ""}">
+      <div class="{numSelected == 1? "top" : "below-top"} token-float-{i} {numSelected > 1 ? "selected" : ""}">
         <img src={tokens[tokenName]} alt="Token" draggable="false"/>
       </div>
     {:else}
@@ -44,6 +45,7 @@
   <div class="num-remaining">
     {numRemaining}
   </div>
+
 </div>
 
 
@@ -97,6 +99,17 @@
     z-index: 1;
   }
 
+  .token-container:hover .below-top.selected{
+    transform: translate(-50px, -5px);
+    z-index: 1;
+    filter: drop-shadow(0px 0px 5px var(--color-glow));
+  }
+
+  .below-top.selected {
+    transform: translate(-50px);
+    z-index: 1;
+  }
+
   .token-float-0 {
     position: absolute;
   }
@@ -132,6 +145,10 @@
   }
 
   .top {
+    transition: transform 0.2s;
+  }
+
+  .below-top {
     transition: transform 0.2s;
   }
 

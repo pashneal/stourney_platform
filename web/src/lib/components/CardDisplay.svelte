@@ -7,25 +7,23 @@
 
 
 </script>
-
 <div class="cards">
-
-  {#each $cards.reverse() as row, i}
-    <Row stackCount={$deckCounts[i]}>
-      {#each row as card}
-        <Card card_name={card.gem} points={card.points}>
-          {#each card.cost.entries() as [gemName, num]}
-            <Gem gem_name={gemName} number={num}/>
-          {/each}
-        </Card>
-      {/each}
-    </Row>
-  {/each}
+    {#each $cards.reverse() as row, i}
+      <Row stackCount={$deckCounts[i]}>
+        {#each row as card}
+          <Card card_name={card.gem} points={card.points}>
+            {#each card.cost.entries() as [gemName, num]}
+              <Gem gem_name={gemName} number={num}/>
+            {/each}
+          </Card>
+        {/each}
+      </Row>
+    {/each}
 </div>
 
 <style>
   .cards {
-    max-width: 800px;
+    width: 800px;
     height: 600px;
     left: 0;
     right: 0;

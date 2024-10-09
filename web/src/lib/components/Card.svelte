@@ -5,6 +5,8 @@
   import ruby_card from "$lib/assets/ruby_card.svg";
   import onyx_card from "$lib/assets/onyx_card.svg";
 
+  import ConfirmDialogPay from "$lib/components/ConfirmDialogPay.svelte";
+
   import zero from "$lib/assets/0.svg";
   import one from "$lib/assets/1.svg";
   import two from "$lib/assets/2.svg";
@@ -25,25 +27,29 @@
     "onyx": onyx_card
   }
 
+
+  export let enableConfirmDialog : boolean = false;
   let nums = [zero, one, two, three, four, five, six, seven];
 
 </script>
 
-<div class="card">
-  <img src={cards[card_name]} alt="Card" draggable="false"/>
-  <div class="card-details"> 
-    <slot></slot>
+<ConfirmDialogPay hidden={enableConfirmDialog}>
+  <div class="card">
+    <img src={cards[card_name]} alt="Card" draggable="false"/>
+    <div class="card-details"> 
+      <slot></slot>
+    </div>
+    <div class="points">
+      <img src={nums[points]} alt="points" draggable="false"/> 
+    </div>
   </div>
-  <div class="points">
-    <img src={nums[points]} alt="points" draggable="false"/> 
-  </div>
-</div>
+</ConfirmDialogPay>
 
 <style>
 
   .card {
-    max-width: 20%;
-    height: 95%;
+    width: 100%;
+    height: 98%;
     -khtml-user-select: none;
     -o-user-select: none;
     -moz-user-select: none;
@@ -63,15 +69,15 @@
   }
   
   img{
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
   }
 
   .card-details {
     top: 0%;
     left: 0;
     right: 0;
-    max-width: 90%;
+    width: 65%;
     height: 50%;
     margin-inline: auto;
     position: absolute;
@@ -81,7 +87,7 @@
     font-family: "Zero";
     position: absolute;
     height: 20%;
-    left: 75%;
+    left: 60%;
     bottom: 5%;
     color: white;
     width: 25%;

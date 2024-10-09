@@ -94,7 +94,7 @@ export let cards = writable(Array<Array<CardDesc>>());
 export let deckCounts = writable([0, 0, 0]);
 
 // Controller state
-export let bankSelected = writable(new Map<Gem, boolean>(["sapphire", "emerald", "ruby", "onyx", "diamond", "gold"].map((gem) => [gem, false])));
+export let bankSelected = writable(new Map<Gem, number>(["sapphire", "emerald", "ruby", "onyx", "diamond", "gold"].map((gem) => [gem, 0])));
 
 // TODO: update this to use enums or string so we don't have to look at this reference again
 // TODO: merge into one big API call rather than multiple to reduce latency 
